@@ -153,7 +153,540 @@ TODO
 
 ---
 
+### 反向传播推导
+
+#### MSE Loss，均方误差损失
+
+- MSE Loss就是矩阵的Frobenius范数的平方，直观说明就是矩阵中各个元素平方的和，一般会乘一个1/2。
+
+$$
+\begin{array}
+\\
+L \in R, X \in R ^{B \times D}, Y \in R^{B \times D} \\
+B是batch, D是维度, X是预测结果, Y是label, Y的每一行是相等的\\
+L = \frac 12 ||X-Y||_F^2  \\
+=\frac 12 \sum_{ij}(x_{ij}-y_{ij})^2
+\end{array}
+$$
+
+- 我们需要的是$L$对$X$的梯度，可以推断出$\frac{\partial L}{\partial X}$的形状和$X$是相同的，就是$B\times D$。现在推导表达式：
+
+$$
+\begin{array} 
+\\
+(\frac{\partial L}{\partial X})_{ij} = \frac{\partial }{\partial x_{ij}}\frac 12 \sum_{ij}(x_{ij}-y_{ij})^2 \\
+= \frac 12 \frac{\partial}{\partial x_{ij}} (x_{ij}-y_{ij})^2 \\
+= x_{ij}-y_{ij} \\
+\frac{\partial L}{\partial X} = X- Y\in R^{B\times D}
+\end{array}
+$$
+
+- 此时已经推导完毕，对于任意定义的Loss，只要它是一个标量，那么它对于输入的$X$的导数的形状就是和$X$相同的，只不过表达式在不同Loss下会不同。
+
+#### 矩阵乘法
+
+- 首先明确，我们的目的始终是计算出标量损失L对各个量（可以是矩阵，可以是向量）的导数。对于如下的矩阵乘法：
+
+$$
+\begin{array}
+\\
+Y=X\cdot W \\
+Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2}\\
+\end{array}
+$$
+
+- B是batch, D_1是输出维度,D_2是输入维度,X是输入,W是权重矩阵,Y是输出
+- 假设我们已经计算得到$\frac{\partial L}{\partial Y}\in R^{B\times D_2}$，为了更新$W$，我们需要$\frac{\partial L}{\partial W}$，为了继续反向传播，我们需要$\frac{\partial L}{\partial X}$。现在推导$\frac{\partial L}{\partial W}$，在此之前，需要先推导$\frac{\partial Y}{\partial W}$。
+- 先推断$\frac{\partial Y}{\partial W}$的形状，输出是$B\times D_2$的矩阵, 输入是$D_1\times D_2$的矩阵, 所以导数是一个$B\times D_1 \times D_1 \times D_2$的张量。现在只需要推导出张量中位于ijab位置的元素表达式：$(\frac{\partial Y}{\partial W})_{ijab}=\frac{\partial Y_{ij}}{\partial W_{ab}}$。$Y_{ij}$就是$X$的第i行与$W$的第j列的内积，写成表达式就是：$Y_{ij}=X_{[i, :]}\cdot W_{[:, j]}=\sum_{k} x_{ik}\cdot w_{kj}$，由此可以得到：
+
+$$
+(\frac{\partial Y}{\partial W})_{ijab}=\frac{\partial y_{ij}}{\partial w_{ab}}=
+\begin{cases}
+x_{ia} & j=b\\
+0 & j\neq b
+\end{cases}
+$$
+
+- 不难发现上面表达式在ijab给定时，值是确定的，说明确实可以计算得到任意一个位置的导数。
+- 此时我们已经推导出$Y$对于$W$的导数，但是我们的目的始终是计算$L$对各个量的偏导数，所以现在使用链式法则计算$\frac{\partial L}{\partial W}$，用标量推导。设我们已经知道$L$对$Y$的导数$\frac{\partial L}{\partial Y} \in R^{B\times D_2}$，记作$G$：
+
+$$
+(\frac{\partial L}{\partial W})_{ab} = \sum_{ij}\frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial w_{ab}}=\sum_{ij}G_{ij}\cdot \frac{\partial y_{ij}}{\partial w_{ab}} \\
+$$
+
+- 由于$j\neq b$时，$\frac{\partial y_{ij}}{\partial w_{ab}}=0$，这部分直接忽略，由此得到：
+
+$$
+\begin{array}
+\\
+(\frac{\partial L}{\partial W})_{ab} = \sum_{ij}G_{ij}\cdot \frac{\partial y_{ij}}{\partial w_{ab}} \\
+只有j=b的时候非零, 把所有j换成b, 然后去掉对j的求和, 以为j=b是一个值, 不需要求和 \\
+= \sum_{i}G_{ib}\cdot \frac{\partial y_{ib}}{\partial w_{ab}}  \\
+使用之前推导得到的y_{ib}对w_{ab}的表达式, 得到: \\
+=\sum_{i}G_{ib}\cdot x_{ia} \\
+这等价于G的第b列与X的第a列对应元素相乘然后再相加, 写成内积形式: \\
+= X_{[a, :]}^T\cdot G_{[:, b]}\\
+\end{array}
+$$
+
+- 此时已经推导得到$(\frac{\partial L}{\partial W})_{ab}=X_{[:,a]}^T\cdot G_{[:, b]}$，可以验证$\frac{\partial L}{\partial W} =  X^T \cdot G \in R^{D_1 \times D_2}$。形状也是对得上的，和$W$的形状相同。
+- **由此得到结论**：
+
+$$
+\begin{array}
+\\
+Y=X\cdot W \\
+Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2} \\
+G=\frac{\partial L}{\partial Y} \in R^{B\times D_2} \\
+有: \\
+\frac{\partial L}{\partial W} =  X^T \cdot G \in R^{D_1 \times D_2}
+\end{array}
+$$
+
+- 如果我们想要得到$\frac{\partial L}{\partial X}$，可以用同样的方法进行分析，但实际上可以用矩阵转置的形式导出结果。
+
+$$
+\begin{array}
+\\
+Y=X\cdot W \\
+转置的性质: \\
+Y^T = W^T \cdot X^T \\
+利用刚才推导的结果: \\
+\frac{\partial L}{\partial X^T} = (W^T)^T\cdot\frac{\partial L}{\partial Y^T} = W\cdot G^T \\
+两侧取转置: \\
+\frac{\partial L}{\partial X} = G\cdot W^T \\
+验证形状: \\
+(B, D_1)=(B,D_2)\cdot (D_2\cdot D_1)
+\end{array} 
+$$
+
+- **由此得到结论**：
+
+$$
+\begin{array}
+\\
+Y=X\cdot W \\
+Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2} \\
+G=\frac{\partial L}{\partial Y} \in R^{B\times D_2} \\
+有: \\
+\frac{\partial L}{\partial X} =  G \cdot W^T \in R^{B \times D_1}
+\end{array}
+$$
+
+- 这一套结论就是反向传播中最常用的矩阵乘法的反向传播规则，有以下直观的发现。
+  - 为了计算$L$对$W$的导数，我们需要在前向传播的时候保存$X^T$。直观理解就是每个线性层的输出都需要保存一份。
+  - 虽然推导中需要计算$Y=X\cdot W$中$Y$对$X$的导数，而且发现这个导数是一个四维张量，无论是计算还是存储都有很大代价。但是实际计算中，只需要分别进行一次矩阵乘法就可以得到需要的$L$对$W$和$L$对$X$的导数，计算非常简洁，实现起来也十分容易。
+
+#### 矩阵加法，bias
+
+- **矩阵加法**：仍然先明确，我们的目的是计算标量损失L对各个量的导数。那么对于如下的矩阵加法：
+
+$$
+\begin{array}
+\\
+Y = X + B  \\
+Y, X,B \in R^{B\times D}
+\end{array}
+$$
+
+- B是batch，D是维度。假设我们已经计算得到$\frac{\partial L}{\partial Y}\in R^{B\times D_2}$，现在推导$\frac{\partial L}{\partial B}$，在此之前，需要先推导$\frac{\partial Y}{\partial B}$。
+- 先推断$\frac{\partial Y}{\partial B}$的形状，输出是$B\times D$的矩阵，输入是$B\times D$的矩阵，所以导数是一个$B\times D \times B \times D$的张量，现在只需要推导出张量中位于ijab位置的元素表达式：$(\frac{\partial Y}{\partial B})_{ijab}=\frac{\partial Y_{ij}}{\partial B_{ab}}$，结果非常直观：
+
+$$
+(\frac{\partial Y}{\partial B})_{ijab}=\frac{\partial y_{ij}}{\partial b_{ab}}=
+\begin{cases}
+1 & i=a ,j=b\\
+0 & \text{others}
+\end{cases}
+$$
+
+- 此时我们已经推导出$Y$对于$B$的导数，现在使用链式法则计算$\frac{\partial L}{\partial B}$，用标量推导，设我们已经知道$L$对$Y$的导数$\frac{\partial L}{\partial Y}\in R^{B\times D}$，记作$G$：
+
+$$
+(\frac{\partial L}{\partial B})_{ab} = \sum_{ij}\frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial b_{ab}}=\sum_{ij}G_{ij}\cdot \frac{\partial y_{ij}}{\partial b_{ab}} \\
+$$
+
+- 由于只有$i=a,j=b$时导数非零，所以得到：
+
+$$
+\begin{array}
+\\
+(\frac{\partial L}{\partial B})_{ab}=G_{ab}\cdot 1=G_{ab} \\
+\frac{\partial L}{\partial B}=G \in R^{B\times D}
+\end{array}
+$$
+
+- 此时已经推导完毕，可以发现对于矩阵加法，L对各个矩阵的导数就是L对各个矩阵的和的导数。**由此得到结论**：
+
+$$
+\begin{array}
+\\
+Y=X+B \\
+Y,X,B \in R^{B\times D} \\
+G = \frac{\partial L}{\partial Y} \in R^{B\times D} \\
+有: \\
+\frac{\partial L}{\partial B}= G \in R^{B \times D}
+\end{array}
+$$
+
+- 对于$\frac{\partial L}{\partial X}$，结论显然是一样的。
+- **加bias**：虽然添加bias这个操作完全可以合并到矩阵乘法中，不过这种操作非常常见，这里还是推导一下。对于$Y=X+b$，在数学上一定是要求$X$和$b$形状相同的；不过在torch中，因为广播机制，实际上计算的是$Y=X+\text{ones}(B, 1) \cdot b$，其中$Y,X \in R^{B \times D}, b\in R^{1 \times D}$。因为我们已经推导过矩阵加法的导数，所以现在只需要推导如下内容：
+
+$$
+\begin{array}
+\\
+b \in R^{1 \times D} \\
+B=\text{ones}(B, 1)\cdot b \\
+x是b的索引 \\
+(\frac{\partial B}{\partial b})_{ijx}= 
+\begin{cases}
+1 & j=x \\
+0 & \text{others}
+\end{cases}
+\end{array}
+$$
+
+- 这个推导和之前是类似的，注意此时$\frac{\partial B}{\partial b}$的形状应该是$B \times D \times B$，只有当$B_{ij}$的列索引和$b$的索引相同的时候，导数才是1，否则都是0。
+- 设我们已知$\frac{\partial L}{\partial Y} \in R^{B \times D}$，记作$G$，根据之前对矩阵加法导数的推导，对于$Y=X+B$，有$\frac{\partial Y}{\partial B}=G$，现在使用链式法则推导$\frac{\partial L}{\partial b}$：
+
+$$
+\begin{array}
+\\
+(\frac{\partial L}{\partial b})_x = \sum_{ij}G_{ij}\frac{\partial B_{ij}}{\partial b_x} \\
+= \sum_i G_{ix}\frac{\partial B_{ix}}{\partial b_x} \\
+= \sum _i G_{ix} \cdot 1\\
+\frac{\partial L}{\partial b} = \text{ones(1, B)}\cdot G \in R^{1 \times D}
+\end{array}
+$$
+
+- 由此得到结论：
+
+$$
+\begin{array}
+\\
+Y=X+\text{ones}(B, 1)\cdot b=X+B \\
+Y, X, B \in R^{B \times D}, b \in R^{1 \times D}\\
+G=\frac{\partial L}{\partial Y} \in R^{B \times D} \\
+有: \\
+\frac{\partial L}{\partial b}=\sum_{i=1}^B G_{i, :}=\text{ones}(1, B)\cdot G \in R^{1 \times D}
+\end{array}
+$$
+
+- 直观理解就是把L对Y的导数沿着batch维度求和，然后就得到了L对b的梯度。
+
+#### 激活函数，element-wise的操作
+
+- 激活函数普遍都是element-wise的操作，所以自然有如下的推导
+
+$$
+\begin{array}
+\\
+Y=\delta(X)\\
+Y,X\in R^{B \times D} \\
+先推导\frac{\partial Y}{\partial X}: \\
+\frac{\partial Y}{\partial X} \in R^{B\times D \times B \times D} \\
+\frac{\partial y_{ij}}{\partial x_{ab}} = \begin{cases}
+\delta^{'}(x_{ab}) & i=a,j=b \\
+0 & \text{others}
+\end{cases} \\
+继续推导\frac{\partial L}{\partial X}:
+\\
+已知\frac{\partial L}{\partial Y}=G\in R^{B \times D}\\
+有(\frac{\partial L}{\partial X})_{ab}= \sum_{ij}\frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial x_{ab}} \\
+=\frac{\partial L}{\partial y_{ab}}\cdot \frac{\partial y_{ab}}{\partial x_{ab}} \\
+=\frac{\partial L}{\partial y_{ab}}\cdot \delta^{'}(x_{ab}) \\
+得到: \\
+\frac{\partial L}{\partial X} = G \odot \delta^{'}(X) \\
+这里的\odot 表示哈达玛积, 就是对应元素相乘\\
+\end{array}
+$$
+
+- 直观理解就是把激活函数的导数作用在输入矩阵的每个元素上，然后将这个矩阵与L对激活值得导数计算哈达玛积，得到的就是L对输入矩阵的导数。
+- 下面是常见激活函数的导数的总结：
+
+| **操作**       | **前向计算 Z=f(Y)**                     | **梯度 ∂Y∂L 的通用公式**               |
+| -------------- | --------------------------------------- | -------------------------------------- |
+| ReLU           | $Z = \max(0, Y)$                        | $G_Y = G_Z \odot \mathbf{1}_{\{Y>0\}}$ |
+| Sigmoid        | $Z = \frac{1}{1+e^{-Y}}$                | $G_Y = G_Z \odot Z \odot (1-Z)$        |
+| Tanh           | $Z = \frac{e^Y - e^{-Y}}{e^Y + e^{-Y}}$ | $G_Y = G_Z \odot (1-Z^2)$              |
+| 幂函数 (Power) | $Z = Y^k$                               | $G_Y = G_Z \odot k \cdot Y^{k-1}$      |
+| 对数 (Log)     | $Z = \ln(Y)$                            | $G_Y = G_Z \odot \frac{1}{Y}$          |
+
+- 实际上哈达玛积本身也是一个element-wise的操作：
+
+$$
+\begin{array}
+\\
+Y=P\odot Q \\
+Y,P,Q\in R^{B\times D} \\
+先推导 \frac{\partial Y}{\partial P} \in R^{B\times D \times B \times D} \\
+\frac{\partial y_{ij}}{\partial p_{ab}} = 
+\begin{cases}
+q_{ab} & a=i,b=j \\
+0 & \text{others}
+\end{cases} \\
+继续推导\frac{\partial L}{\partial P}\\
+设\frac{\partial L}{\partial Y} =G \in R^{B \times D} \\
+\frac{\partial L}{\partial p_{ab}}=\sum_{ij}\frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial p_{ab}} \\
+=G_{ab}\cdot q_{ab} \\
+\frac{\partial L}{\partial P} = G \odot Q
+\end{array}
+$$
+
+#### 降维操作 
+
+- **对整个向量求和**：$y=\sum_{ij} X_{ij}，y\in R, X\in R^{B\times D}$，求$\frac{\partial y}{\partial X}$以及$\frac{\partial L}{\partial X}$。思路自然是写出$y$对X每个元素的导数，推导如下：
+
+$$
+\begin{array}
+\\
+推断形状: 
+\frac{\partial y}{\partial X} \in R ^{B \times D} \\
+\frac{y}{\partial x_{ij}} = 1 \\
+\frac{\partial y}{\partial X} = \text{ones}(B, D) \\
+设已知\frac{\partial L}{\partial y} = g \in R\\
+推导\frac{\partial L}{\partial X}: \\
+\frac{\partial L}{\partial x_{ij}} = \frac{\partial L}{\partial y}\cdot \frac{\partial y}{\partial x_{ij}} = \frac{\partial L}{\partial y}=g \\
+得到\frac{\partial L}{\partial X} = g \cdot \text{ones}(B, D)\in R^{ B \times D}
+\end{array}
+$$
+
+- 对于mean操作，显然有$\frac{\partial Y}{\partial X}=\frac{1}{B \times D} \cdot \text{ones} (B, D)$，自然得到$\frac{\partial L}{\partial X} = g \cdot \frac{1}{B\times D} \cdot \text{ones}(B, D)\in R^{ B \times D}$。
+
+- **maxpooling**：推导如下：
+
+$$
+\begin{array}
+\\
+y=\max(X), y\in R, X\in R^{B \times D} \\
+推断形状: \\
+\frac{\partial y}{\partial X} \in R ^{B \times D} \\
+\frac{\partial y}{\partial x_{ij}} = \begin{cases}
+1 & i,j=\arg \max X\\
+0 & \text{others}
+\end{cases} \\
+设已知\frac{\partial L}{\partial y}=g \in R \\
+\frac{\partial L}{\partial x_{ij}} = \begin{cases}
+g \cdot 1 & i,j=\arg \max X \\
+0 & \text{others}
+\end{cases} \\
+\frac{\partial L}{\partial X}\in R^{B \times D}
+\end{array}
+$$
+
+- 可以发现，maxpooling操作实际上就是只保留了最大的输入元素的梯度，其余元素的梯度都是零。
+
+#### softmax
+
+- **softmax本身的导数**：
+- softmax本身不是一个降维操作，但它和cross-entropy结合之后就构成了一个非常常见的损失函数。先推导softmax本身的导数。
+
+$$
+\begin{array}
+\\
+设输入的样本为: \\
+z = (z_1, z_2, \dots, z_C) \in R^{1 \times C} \\
+softmax的定义为: \\
+p_i = \frac{e^{z_i}}{\sum_{k=1}^C e^{z_k}}, \quad p \in R^{1 \times C} \\
+计算\frac{\partial p}{\partial z},先推断形状: \\
+\frac{\partial p}{\partial z} \in R^{C \times C} \\
+当i=j时 \\
+\frac{\partial p_i}{\partial z_i}= \frac{e^{z_i}(\sum_k e^{z_k}) - e^{z_i}e^{z_i}}{(\sum_k e^{z_k})^2}=\frac{e^{z_i}}{\sum_k e^{z_k}}- \frac{e^{z_i}\cdot e^{z_i}}{(\sum_k e^{z_k})^2} \\
+= p_i - p_i^2 \\
+= p_i(1 - p_i) \\
+当i\neq j时 \\
+\frac{\partial p_i}{\partial z_j}
+= -\frac{e^{z_i}e^{z_j}}{(\sum_k e^{z_k})^2}
+= -p_i p_j \\
+合并写为: \\
+\frac{\partial p_i}{\partial z_j}
+= p_i(\delta_{ij} - p_j) \\
+其中\delta_{ij}仅在i=j时为1, 否则为0\\
+可以写成矩阵形式: \\
+\frac{\partial p}{\partial z}
+= \mathrm{diag}(p) - p p^\top
+\in R^{C \times C}
+\end{array}
+$$
+
+- 现在假设已知$\frac{\partial L}{\partial p}=G \in R^{1 \times C}$，继续推导$\frac{\partial L}{\partial z}$：
+
+$$
+\begin{array}
+\\
+推断形状: \\
+\frac{\partial L}{\partial z}\in R ^{1 \times C} \\
+\frac{\partial L}{\partial z_a}=\sum_i \frac{\partial L}{\partial p_i} \cdot \frac{\partial p_i}{\partial z_a} =\sum_i G_i \cdot p_i (\delta_{ia}-p_a) \\
+=\sum_i G_i \cdot p_i \cdot \delta_{ia}- \sum_i G_i \cdot p_i \cdot p_a \\
+= G_a \cdot p_a - p_a\sum _i G_i \cdot p_i \\
+写成矩阵形式(形式不唯一且不重要): \\
+\frac{\partial L}{\partial z} = G \odot p - (G\cdot p^T)\cdot p \\
+其中G\cdot p^T是一个标量
+\end{array}
+$$
+
+- **cross-entropy的导数**：
+- 现在推导L对cross-entropy的输入的导数$\frac{\partial L}{\partial p}$：
+
+$$
+\begin{array}
+\\
+cross-entropy定义: \\
+L = -\sum_{i=1}^C y_i \log p_i,\quad L \in R \\
+其中y_i是标签, p_i是softmax的输出 \\
+推断形状: \\
+\frac{\partial L}{\partial p} \in R ^{1\times C} \\
+\frac{\partial L}{\partial p_i} = -\frac{y_i}{p_i}\\
+这里缺乏一个严谨的符号来写出矩阵形式的结果, 用./表示对应元素相除: \\
+\frac{\partial L}{\partial p} = -y./p \in R^{1 \times C}
+\end{array}
+$$
+
+- **softmax接cross-entropy的导数**：
+- 在已经前述推导的基础上，此时可以推导L对softmax的输入的导数$\frac{\partial L}{\partial z}$：
+
+$$
+\begin{array}
+\\
+已知 p=softmax(z)\in R^{1 \times C}, \quad p, z \in R^{1 \times C} \\
+L = -\sum_{i=1}^C y_i \log p_i,\quad L \in R, y\in R^{1 \times C} \\
+根据前面推导, 有: \\
+\frac{\partial L}{\partial z_a}
+= G_a \cdot p_a - p_a\sum _i G_i \cdot p_i \\
+也有: \\
+G_i = \frac{\partial L}{\partial p_i} = -\frac{y_i}{p_i} \\
+两者结合, 得到: \\
+\frac{\partial L}{\partial z_a} = G_a \cdot p_a - p_a\sum _i G_i \cdot p_i \\
+= -\frac{y_a}{p_a}\cdot p_a + p_a\sum_i \frac{y_i}{p_i}\cdot p_i \\
+=-y_a + p_a\sum_i y_i \\
+如果y是one-hot矩阵, 则y中只有一个元素是1, 其余都是0, 自然有\sum_iy_i=1,得到: \\
+原式=-y_a + p_a =p_a-y_a\\
+写成矩阵形式: \\
+\frac{\partial L}{\partial z} = p-y\in R^{1 \times C}
+\end{array}
+$$
+
+- 从结果中可以看到，softmax后面接cross-entropy之后，损失L对softmax的输入的梯度的表达式是非常简洁的。这也是为什么在torch等框架中，softmax和cross-entropy通常被融合成一个算子。
+- **log-softmax的说明**：
+- 在torch中，为了数值稳定性，实际计算的是log-softmax。它是为了解决如下的问题的。
+- 如果没有log-softmax操作，用softmax的定义计算，如果某个$z_i$特别大，那么在计算$p_i$的时候，分子分母都很大会直接溢出。如果某个$z_i$特别小，比如是-1000，那么计算出来的$p_i$会直接数值下溢变成0，后续计算$\log p_i$的时候会有问题，同时也无法区分出-1000和-10000这种logits的差异（因为概率都下溢成0了，没区别了）。注意到在softmax之后计算cross-entropy时，需要的不是$p_i$，而是$\log p_i$，所以可以考虑直接计算$\log p_i$，而不是先计算$p_i$再取log。至于梯度计算时需要的$p_i$，只需要对先计算出的$\log p_i$再取一次指数就可以了。
+- 下面是log-softmax的forward说明：
+
+$$
+\begin{array}
+\\
+\mathrm{log\_softmax}(z_i) = \log(p_i)=
+\log\frac{e^{z_i}}{\sum_{j} e^{z_j}} \\
+= \log(e^{z_i}) -
+\log\left(\sum_{j} e^{z_j}\right) \\
+=\log (e^{z_i})-\log (e^m \sum _j e^{z_j - m}) \\
+=z^i - m - \log (\sum e^{z_j -m}) \\
+其中m=\max_j z_j \\
+此时保证了 z_j - m \le 0 \Rightarrow e^{z_j -m }\in (0, 1] \\
+由此避免了e^{z_j}过大导致的数值上溢 \\
+同时没有先计算p_i再计算\log(p_i), 避免了接近0的p_i导致的\log(p_i)的数值下溢问题
+\end{array}
+$$
+
+- 使用log-softmax直接计算出$\log p_i$，然后代入cross-entropy，在forward上和原来完全等价，梯度自然也是完全相同的。
+
+#### 卷积
+
+- **经典推导**：卷积导数的经典推导参考:<https://zhuanlan.zhihu.com/p/640697443>，类似的推导的思路基本上都是把卷积写成标量求和的形式，然后得到结果。
+- **利用之前推导的结果**：实际上卷积操作涉及的所有运算的导数我们都推导过，对于每个位置的卷积，实际上就是$y_{ij}=\text{sum}(X_{[i+kw,j+kh]} \odot K)$，也就是卷积核与输入矩阵的一部分计算哈达玛积，然后求和。在已知$\frac{\partial L}{\partial Y}$的情况下，用之前的求导结果可以算出来$\frac{\partial L}{\partial W} = \frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial K}$和$\frac{\partial L}{\partial y_{ij}}\cdot \frac{\partial y_{ij}}{\partial X_{[i+kw,j+kh]}}$。卷积核的移动操作会把导数积累到$\frac{\partial L}{\partial K}$和$\frac{\partial L}{\partial X}$上，即便没有显示地推导出导数的形式，也完全可以计算卷积的导数。
+- 将一些常用操作的导数手动推导出来的意义是可以合并中间结果，有望减少中间计算和中间结果的存储。
+- **实际的卷积**：实际的卷积计算无论forward还是backward都是用矩阵乘法完成的，并不存在用卷积核在矩阵上移动计算的步骤。考虑每个位置的计算：$y_{ij}=\text{sum}(X_{[i+kw,j+kh]} \odot K)$，如果将$X_{[i+kw,j+kh]}$和$K$都展平成向量，那么这个计算可以表达成两个向量的内积形式。将$X$每次计算的切片部分都展平成向量然后按照列拼起来，那么整个卷积运算就可以表示成一个矩阵和向量的乘法计算。下面是一个例子：
+- 设输入样本为：
+$$
+X =
+\begin{bmatrix}
+1 & 2 & 3 & 4 \\
+5 & 6 & 7 & 8 \\
+9 & 10 & 11 & 12 \\
+13 & 14 & 15 & 16
+\end{bmatrix}
+\in \mathbb{R}^{1\times1\times4\times4}
+$$
+- 设卷积核为：
+$$
+W =
+\begin{bmatrix}
+1 & 0 & -1 \\
+1 & 0 & -1 \\
+1 & 0 & -1
+\end{bmatrix}
+\in \mathbb{R}^{1\times1\times3\times3}
+$$
+- 设padding=0，stride=1，输出的特征图尺寸为$4-3+1=2$，直接计算卷积的结果如下（左上角为例）：
+$$
+Y_{1,1} =
+\begin{bmatrix}
+1 & 2 & 3 \\
+5 & 6 & 7 \\
+9 & 10 & 11
+\end{bmatrix}
+\cdot
+\begin{bmatrix}
+1 & 0 & -1 \\
+1 & 0 & -1 \\
+1 & 0 & -1
+\end{bmatrix}
+$$
+- 最终的结果为：
+$$
+Y =
+\begin{bmatrix}
+-6 & -6 \\
+-6 & -6
+\end{bmatrix}
+$$
+- 下面是转换成矩阵乘法的计算过程。按照行拼接的顺序，将各个位置的$3 \times 3$patch拼成列向量：
+$$
+X_{col} =
+\begin{bmatrix}
+1 & 2 & 5 & 6 \\
+2 & 3 & 6 & 7 \\
+3 & 4 & 7 & 8 \\
+5 & 6 & 9 & 10 \\
+6 & 7 & 10 & 11 \\
+7 & 8 & 11 & 12 \\
+9 & 10 & 13 & 14 \\
+10 & 11 & 14 & 15 \\
+11 & 12 & 15 & 16
+\end{bmatrix}
+\in \mathbb{R}^{9\times4}
+$$
+- 将卷积核按照行拼接的顺序展平成行向量：
+$$
+W_{row} =
+\begin{bmatrix}
+1 & 0 & -1 & 1 & 0 & -1 & 1 & 0 & -1
+\end{bmatrix}
+\in \mathbb{R}^{1\times9}
+$$
+- 用矩阵乘法实现卷积：
+$$
+\begin{array}
+\\
+Y_{col} = W_{row} \cdot X_{col}  \\
+= [-6,-6,-6,-6] \\
+\end{array}
+$$
+- 将结果按照行拆分reshape回正常的输出形状：
+$$
+Y =
+\begin{bmatrix}
+-6 & -6 \\
+-6 & -6
+\end{bmatrix}
+\in \mathbb{R}^{1\times1\times2\times2}
+$$
+- **实际的卷积的导数**：当卷积计算被转化为矩阵乘法之后，我们就可以找到一种新的推导卷积导数的方法。矩阵乘法的导数在前面已经推导过，所以在与卷积等效的矩阵乘法$Y_{col} = W_{row} \cdot X_{col}$，中，自然可以计算出$\frac{\partial L}{\partial W_{row}}$和$\frac{\partial L}{\partial X_{col}}$。对于卷积核的导数$\frac{\partial L}{\partial W_{row}}$来说，只要reshape回卷积核的形状就完成了计算。对于输入特征图对应的矩阵的导数$\frac{\partial L}{\partial X_{col}}$，需要将对应位置的梯度累加到原特征图对应的位置上。
+	- 用这种方式在直觉上可以验证为什么卷积的导数是卷积核转置之后在$\frac{\partial L}{\partial Y}$上进行卷积运算。
+- **工程实现的思路**：实际用GPGPU实现卷积的forward和backward时，思路是每个threadblock负责输出结果的一块，每个threadblock把kernel和需要的输入矩阵读进shared memory，之后在线从shared memory中读取元素得到patch展平的向量，然后计算结果并写入输出的对应位置。在整个过程中不需要显示地构造patch展平之后拼接的矩阵。
+
 ### 梯度下降算法 with Batch Size
+
 梯度下降的核心迭代公式为：
 $$
 \theta_{t+1} = \theta_t - \eta \cdot \nabla_{\theta} L(\theta_t)
@@ -215,7 +748,7 @@ $$
         5.  **计算资源瓶颈**：单卡内存无法容纳整个模型和优化器状态，必须依赖复杂的分布式并行训练策略（如数据并行、模型并行、流水线并行），这使得优化算法的设计与系统工程深度耦合。
 
 3. **核心方法论的延续与演进**
-LLM的训练本质上仍然是遵循“反向传播提供梯度，梯度下降指导更新”的范式，但面对上述挑战，其具体实现发生了深刻演进：
+   LLM的训练本质上仍然是遵循“反向传播提供梯度，梯度下降指导更新”的范式，但面对上述挑战，其具体实现发生了深刻演进：
     *   **反向传播（Backpropagation）**：**基础引擎依然核心**。其高效计算梯度的能力是训练任何深度网络的基石。在LLM中，反向传播的计算图因Transformer的复杂结构（多头注意力、前馈网络、残差连接、层归一化）而变得巨大，但其链式法则的本质未变。核心挑战在于如何**分布式地、高效地**完成跨数千张GPU的反向传播计算。
     *   **梯度下降（Gradient Descent）**：**导航仪需要全面升级**。朴素的SGD已无法应对LLM的训练。其演进体现在：
         1.  **优化器升级**：采用**自适应学习率优化器（如Adam, AdamW）**。它们为每个参数维护独立的学习率，能更平稳地处理不同参数尺度和稀疏梯度，是训练稳定的关键。
