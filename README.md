@@ -148,7 +148,6 @@ Gradient Desent && Backpropagation
 ---
 
 ### 反向传播Demo
-TODO
 ![alt text](img/demo.png)
 
 ---
@@ -160,7 +159,7 @@ TODO
 - MSE Loss就是矩阵的Frobenius范数的平方，直观说明就是矩阵中各个元素平方的和，一般会乘一个1/2。
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 L \in R, X \in R ^{B \times D}, Y \in R^{B \times D} \\
 B是batch, D是维度, X是预测结果, Y是label, Y的每一行是相等的\\
@@ -172,7 +171,7 @@ $$
 - 我们需要的是$L$对$X$的梯度，可以推断出$\frac{\partial L}{\partial X}$的形状和$X$是相同的，就是$B\times D$。现在推导表达式：
 
 $$
-\begin{array} 
+\begin{array}{l}
 \\
 (\frac{\partial L}{\partial X})_{ij} = \frac{\partial }{\partial x_{ij}}\frac 12 \sum_{ij}(x_{ij}-y_{ij})^2 \\
 = \frac 12 \frac{\partial}{\partial x_{ij}} (x_{ij}-y_{ij})^2 \\
@@ -188,7 +187,7 @@ $$
 - 首先明确，我们的目的始终是计算出标量损失L对各个量（可以是矩阵，可以是向量）的导数。对于如下的矩阵乘法：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X\cdot W \\
 Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2}\\
@@ -217,7 +216,7 @@ $$
 - 由于$j\neq b$时，$\frac{\partial y_{ij}}{\partial w_{ab}}=0$，这部分直接忽略，由此得到：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 (\frac{\partial L}{\partial W})_{ab} = \sum_{ij}G_{ij}\cdot \frac{\partial y_{ij}}{\partial w_{ab}} \\
 只有j=b的时候非零, 把所有j换成b, 然后去掉对j的求和, 以为j=b是一个值, 不需要求和 \\
@@ -233,7 +232,7 @@ $$
 - **由此得到结论**：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X\cdot W \\
 Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2} \\
@@ -246,7 +245,7 @@ $$
 - 如果我们想要得到$\frac{\partial L}{\partial X}$，可以用同样的方法进行分析，但实际上可以用矩阵转置的形式导出结果。
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X\cdot W \\
 转置的性质: \\
@@ -263,7 +262,7 @@ $$
 - **由此得到结论**：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X\cdot W \\
 Y\in R^{B\times D_2}, X\in R^{B \times D_1}, W\in R^{D_1 \times D_2} \\
@@ -282,7 +281,7 @@ $$
 - **矩阵加法**：仍然先明确，我们的目的是计算标量损失L对各个量的导数。那么对于如下的矩阵加法：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y = X + B  \\
 Y, X,B \in R^{B\times D}
@@ -309,7 +308,7 @@ $$
 - 由于只有$i=a,j=b$时导数非零，所以得到：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 (\frac{\partial L}{\partial B})_{ab}=G_{ab}\cdot 1=G_{ab} \\
 \frac{\partial L}{\partial B}=G \in R^{B\times D}
@@ -319,7 +318,7 @@ $$
 - 此时已经推导完毕，可以发现对于矩阵加法，L对各个矩阵的导数就是L对各个矩阵的和的导数。**由此得到结论**：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X+B \\
 Y,X,B \in R^{B\times D} \\
@@ -333,7 +332,7 @@ $$
 - **加bias**：虽然添加bias这个操作完全可以合并到矩阵乘法中，不过这种操作非常常见，这里还是推导一下。对于$Y=X+b$，在数学上一定是要求$X$和$b$形状相同的；不过在torch中，因为广播机制，实际上计算的是$Y=X+\text{ones}(B, 1) \cdot b$，其中$Y,X \in R^{B \times D}, b\in R^{1 \times D}$。因为我们已经推导过矩阵加法的导数，所以现在只需要推导如下内容：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 b \in R^{1 \times D} \\
 B=\text{ones}(B, 1)\cdot b \\
@@ -350,7 +349,7 @@ $$
 - 设我们已知$\frac{\partial L}{\partial Y} \in R^{B \times D}$，记作$G$，根据之前对矩阵加法导数的推导，对于$Y=X+B$，有$\frac{\partial Y}{\partial B}=G$，现在使用链式法则推导$\frac{\partial L}{\partial b}$：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 (\frac{\partial L}{\partial b})_x = \sum_{ij}G_{ij}\frac{\partial B_{ij}}{\partial b_x} \\
 = \sum_i G_{ix}\frac{\partial B_{ix}}{\partial b_x} \\
@@ -362,7 +361,7 @@ $$
 - 由此得到结论：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=X+\text{ones}(B, 1)\cdot b=X+B \\
 Y, X, B \in R^{B \times D}, b \in R^{1 \times D}\\
@@ -379,7 +378,7 @@ $$
 - 激活函数普遍都是element-wise的操作，所以自然有如下的推导
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=\delta(X)\\
 Y,X\in R^{B \times D} \\
@@ -415,7 +414,7 @@ $$
 - 实际上哈达玛积本身也是一个element-wise的操作：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y=P\odot Q \\
 Y,P,Q\in R^{B\times D} \\
@@ -438,7 +437,7 @@ $$
 - **对整个向量求和**：$y=\sum_{ij} X_{ij}，y\in R, X\in R^{B\times D}$，求$\frac{\partial y}{\partial X}$以及$\frac{\partial L}{\partial X}$。思路自然是写出$y$对X每个元素的导数，推导如下：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 推断形状: 
 \frac{\partial y}{\partial X} \in R ^{B \times D} \\
@@ -456,7 +455,7 @@ $$
 - **maxpooling**：推导如下：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 y=\max(X), y\in R, X\in R^{B \times D} \\
 推断形状: \\
@@ -482,7 +481,7 @@ $$
 - softmax本身不是一个降维操作，但它和cross-entropy结合之后就构成了一个非常常见的损失函数。先推导softmax本身的导数。
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 设输入的样本为: \\
 z = (z_1, z_2, \dots, z_C) \in R^{1 \times C} \\
@@ -512,7 +511,7 @@ $$
 - 现在假设已知$\frac{\partial L}{\partial p}=G \in R^{1 \times C}$，继续推导$\frac{\partial L}{\partial z}$：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 推断形状: \\
 \frac{\partial L}{\partial z}\in R ^{1 \times C} \\
@@ -529,7 +528,7 @@ $$
 - 现在推导L对cross-entropy的输入的导数$\frac{\partial L}{\partial p}$：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 cross-entropy定义: \\
 L = -\sum_{i=1}^C y_i \log p_i,\quad L \in R \\
@@ -546,7 +545,7 @@ $$
 - 在已经前述推导的基础上，此时可以推导L对softmax的输入的导数$\frac{\partial L}{\partial z}$：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 已知 p=softmax(z)\in R^{1 \times C}, \quad p, z \in R^{1 \times C} \\
 L = -\sum_{i=1}^C y_i \log p_i,\quad L \in R, y\in R^{1 \times C} \\
@@ -573,7 +572,7 @@ $$
 - 下面是log-softmax的forward说明：
 
 $$
-\begin{array}
+\begin{array}{l}
 \\
 \mathrm{log\_softmax}(z_i) = \log(p_i)=
 \log\frac{e^{z_i}}{\sum_{j} e^{z_j}} \\
@@ -666,7 +665,7 @@ W_{row} =
 $$
 - 用矩阵乘法实现卷积：
 $$
-\begin{array}
+\begin{array}{l}
 \\
 Y_{col} = W_{row} \cdot X_{col}  \\
 = [-6,-6,-6,-6] \\
@@ -684,6 +683,8 @@ $$
 - **实际的卷积的导数**：当卷积计算被转化为矩阵乘法之后，我们就可以找到一种新的推导卷积导数的方法。矩阵乘法的导数在前面已经推导过，所以在与卷积等效的矩阵乘法$Y_{col} = W_{row} \cdot X_{col}$，中，自然可以计算出$\frac{\partial L}{\partial W_{row}}$和$\frac{\partial L}{\partial X_{col}}$。对于卷积核的导数$\frac{\partial L}{\partial W_{row}}$来说，只要reshape回卷积核的形状就完成了计算。对于输入特征图对应的矩阵的导数$\frac{\partial L}{\partial X_{col}}$，需要将对应位置的梯度累加到原特征图对应的位置上。
 	- 用这种方式在直觉上可以验证为什么卷积的导数是卷积核转置之后在$\frac{\partial L}{\partial Y}$上进行卷积运算。
 - **工程实现的思路**：实际用GPGPU实现卷积的forward和backward时，思路是每个threadblock负责输出结果的一块，每个threadblock把kernel和需要的输入矩阵读进shared memory，之后在线从shared memory中读取元素得到patch展平的向量，然后计算结果并写入输出的对应位置。在整个过程中不需要显示地构造patch展平之后拼接的矩阵。
+
+---
 
 ### 梯度下降算法 with Batch Size
 
