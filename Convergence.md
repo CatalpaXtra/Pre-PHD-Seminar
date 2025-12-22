@@ -5,7 +5,7 @@ $$E(w)=E(w^{(k)}+E'(w^{k})(w-w^{(k)})+\frac{1}{2}E''(w^{(k)})(w-w^{(k)})^2$$
 根据牛顿方法，目标函数E最小值除w取值为$w_{min}=w^{(k)}-E''(w^{(k)})^{-1}E'(w^{(k)})$，则最优步长为$$\eta_{opt}=E''(w^{(k)})^{-1}=a^{-1}$$
 如果$\eta < \eta_{opt}$，算法会单调收敛最小值；$\eta_{opt}<\eta<2\eta_{opt}$时，振荡收敛至最小值；$\eta>2\eta_{opt}$时，算法发散。
 ![[Pasted image 20251222195035.png]]
-
+![alt text](<figure/Pasted image 20251222195035.png>)
 ### 非二次函数
 目标函数泰勒级数展开至二次项：
 $$E\approx E(w^{(k)})+\frac{dE(w^{(k)})}{dw}(w-w^{(k)})+\frac{1}{2}\frac{d^2E(w^{(k)})}{dw^2}(w-w^{(k)})^2+...$$
@@ -24,6 +24,7 @@ $$E=\frac{1}{2}\textbf{w}^T\textbf{Aw}+\textbf{w}^T\textbf{b}+c$$
 $$\textbf{w}^{(k+1)}=\textbf{w}^{(k)}-\eta\textbf{A}^{-1}\nabla_{\textbf{w}}E(w^{(k)})^T$$
 其中最优学习率$\eta=1$。
 ![[Pasted image 20251222203039.png]]
+![alt text](<figure/Pasted image 20251222203039.png>)
 ### 一般函数（牛顿二阶方法）
 对于一般的目标函数，采用泰勒级数展开：
 $$E(\textbf{w})\approx E(\textbf{w}^{(k)})+\nabla_{\textbf{w}}E(\textbf{w}^{(k)})(\textbf{w}-\textbf{w}^{(k)})+\frac{1}{2}(\textbf{w}-\textbf{w}^{(k)})^TH_E(\textbf{w}^{(k)})(\textbf{w}-\textbf{w}^{(k)})$$
@@ -34,6 +35,7 @@ $$\textbf{w}^{(k+1)}=\textbf{w}^{(k)}-\eta\textbf{H}_E(\textbf{w}^{(k)})^{-1}\na
 
 牛顿方法等价于在$\textbf{w}^{(k)}$附近使用二次型拟合，随后对该二次型采用最优步长优化至最小值。
 ![[Pasted image 20251222204302.png]]
+![alt text](<figure/Pasted image 20251222204302.png>)
 **缺点：
 	海森矩阵纬度高，求逆计算复杂度高
 	在非凸区域 Hessian 可能非正定，导致算法发散
@@ -51,7 +53,9 @@ $$w_i^{k+1}=w_i^k-\frac{\Delta w_i^{k-1}}{E'(w_i^{(k)})-E'(w_i^{k-1})}E'(w_i^k)$
 $$\Delta W^k = \beta\Delta W^{k-1}-\eta\nabla_{W}Loss(W^{k-1})^T$$
 其中典型值为$\beta=0.9$。
 ![[Pasted image 20251222211136.png]]
+![alt text](<figure/Pasted image 20251222211136.png>)
 #### Nestorov’s 加速梯度
 首先延续上一部更新，之后计算该位置的梯度，最后合并两部更新，公式如下：
 $$\Delta W^k = \beta\Delta W^{k-1}-\eta\nabla_{W}Loss(W^{k-1}+\beta\Delta W^{k-1})^T$$
 ![[Pasted image 20251222211444.png]]
+![alt text](<figure/Pasted image 20251222211444.png>)
