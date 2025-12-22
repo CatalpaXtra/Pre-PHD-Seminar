@@ -36,15 +36,44 @@ Gradient Desent && Backpropagation
     *   **作用**：
         *   **加速收敛**：在梯度方向一致的维度上加速。
         *   **抑制震荡**：通过动量平滑掉不一致的梯度噪声，帮助穿越狭窄的“沟壑”。
+    *   **SGD with Momentum**
+        引入速度变量 $ \mathbf{v}_t $，其更新规则如下：
+        1. **计算动量（速度）**：
+        $$
+        \mathbf{v}_t = \beta \mathbf{v}_{t-1} + (1 - \beta) \mathbf{g}_t
+        $$
+        其中：
+        * $ \mathbf{g}_t $ 是当前时刻的梯度。
+        * $ \beta $ 是动量系数（通常设为0.9），控制历史速度的衰减程度。
+        * $ \mathbf{v}_t $ 本质上是历史梯度的一个指数加权移动平均，它积累了之前更新的方向。
+        2. **参数更新**：
+        $$
+        \theta_t = \theta_{t-1} - \eta \mathbf{v}_t
+        $$
+        其中 $ \eta $ 是学习率。
+    *   **SGD with Nesterov Acceleration**
+        *   **核心思想**：**前瞻一步**
+            * 不像标准动量，先计算当前点的梯度然后叠加动量
+            * 而是先让参数沿着当前累积的动量方向（$ \beta \mathbf{v}_{t-1} $）进行**临时更新** ，得到前瞻位置（$\theta_{t-1} - \eta \beta \mathbf{v}_{t-1}$）。然后，**在前瞻位置计算梯度**，用此梯度校正当前的动量更新。
+        *   **数学表达**：
+            1. **计算前瞻位置的梯度**：
+            $$
+            \mathbf{g}_t^{lookahead} = \nabla J(\theta_{t-1} - \eta \beta \mathbf{v}_{t-1})
+            $$
+            2. **更新速度（动量）**：
+            $$
+            \mathbf{v}_t = \beta \mathbf{v}_{t-1} + (1 - \beta) \mathbf{g}_t^{lookahead}
+            $$
+            3. **参数更新**：
+            $$
+            \theta_t = \theta_{t-1} - \eta \mathbf{v}_t
+            $$
+        *   **e.g.**：当参数在动量作用下冲向谷底时，标准动量会“冲过头”才根据谷底的梯度调整；而NAG会提前“看到”谷底的坡度，从而提前减速并更准确地转向。
+        *   使得NAG在理论上**具有更优的收敛率**，在实践中对于循环神经网络（RNN）等模型的训练往往表现更好，能更有效地处理损失函数中的“沟壑”地形。
 
 2.  **自适应学习率（Per-parameter Learning Rate）**
     *   **核心思想**：为网络中**每一个参数**单独调整学习率。根据该参数的历史梯度信息，自动放大或缩小其更新步长。
-    *   **代表算法RMSProp**：改进AdaGrad，引入衰减系数，只关注近期梯度历史，解决了学习率过早衰减的问题。
-
----
-
-### 主流
-1. **RMSProp** (Root Mean Square Propagation)
+    *   **RMSProp** (Root Mean Square Propagation)
     引入衰减系数，**只关注近期梯度历史**，淡化遥远过去梯度的影响。从而解决了学习率单调下降的问题，使训练能够持续进行。
     1.  **计算梯度平方的指数移动平均**：
         $$
@@ -57,9 +86,12 @@ Gradient Desent && Backpropagation
         $$
         \theta_{t} = \theta_{t-1} - \frac{\eta}{\sqrt{E[g^2]_t} + \epsilon} \odot g_t
         $$
-        **自适应机制**：对于某个参数，如果其历史梯度 $ \sqrt{E[g^2]_t}t $ 很大（更新频繁或幅度大），那么其对应的缩放因子就会变小，从而**减小该参数的实际学习步长**。反之，对于历史梯度小的稀疏参数，其有效学习率相对较大。
+    *   **自适应机制**：对于某个参数，如果其历史梯度 $ \sqrt{E[g^2]_t} $ 很大（更新频繁或幅度大），那么其对应的缩放因子就会变小，从而**减小该参数的实际学习步长**。反之，对于历史梯度小的稀疏参数，其有效学习率相对较大。
 
-2. **Adam** (Adaptive Moment Estimation)
+---
+
+### 主流
+1. **Adam** (Adaptive Moment Estimation)
     **同时结合了动量（Momentum）和RMSProp的思想**，通过自适应调整每个参数的学习率来加速收敛并提升训练稳定性。
     1.  **计算梯度的一阶矩估计（动量项）**：
         $$
@@ -96,7 +128,7 @@ Gradient Desent && Backpropagation
         - $ \hat{m}_t $ 提供**动量方向**
         - $ \sqrt{\hat{v}_t} $ 起到**逐参数自适应缩放学习率**的作用：对于历史梯度平方和较大的参数，其步长会被缩小；反之则步长相对较大
 
-3.  **AdamW** (Adam with Weight Decay)
+2.  **AdamW** (Adam with Weight Decay)
     **将权重衰减（Weight Decay，即L2正则化项）从梯度计算中解耦出来**，直接、独立地应用于参数更新，而非作为损失函数的一部分影响梯度。在标准Adam优化器基础上的一个重要改进。
     1.  **计算梯度的一阶矩估计（动量项）**：与Adam完全相同
     2.  **计算梯度的二阶矩估计（自适应项）**：与Adam完全相同
@@ -119,6 +151,23 @@ Gradient Desent && Backpropagation
     - 通过**解耦权重衰减**，提供了更纯粹、更可控的正则化。使模型在追求高性能的同时，能更好地避免过拟合。
     - 在大容量模型（如Transformer）的训练中，AdamW已成为获得更优泛化能力的首选优化器。
 
+---
+
+### Choose Optimizer
+```mermaid
+graph TD
+    A[优化器选择] --> B{数据集大小?};
+    
+    B -->|小数据集| C[SGD + Momentum];
+    B -->|大数据集| D{模型类型?};
+    
+    D -->|Transformer| E[AdamW];
+    D -->|RNN/LSTM| F[Adam];
+    D -->|CNN| G{计算资源?};
+    
+    G -->|充足| H[AdamW];
+    G -->|有限| I[SGD + Momentum];
+```
 
 ---
 
@@ -722,9 +771,6 @@ $$
 
 
 # TODO
-## How to choose optimizer
-
-
 ## Future Work
 1.  **更先进的优化器**
 2.  **二阶优化方法**：探索利用损失函数的二阶导数（海森矩阵或其近似）信息的优化方法，如自然梯度下降、KFAC等，以期获得更优的收敛特性，尽管其计算和存储成本通常更高。
