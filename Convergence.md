@@ -59,3 +59,27 @@ $$\Delta W^k = \beta\Delta W^{k-1}-\eta\nabla_{W}Loss(W^{k-1})^T$$
 $$\Delta W^k = \beta\Delta W^{k-1}-\eta\nabla_{W}Loss(W^{k-1}+\beta\Delta W^{k-1})^T$$
 ![[Pasted image 20251222211444.png]]
 ![alt text](<figure/Pasted image 20251222211444.png>)
+
+## SGD 的收敛性
+收敛定义为$|f(w^k)-f(w^*)|<\epsilon$，收敛必须保证学习率衰减；
+**充分条件:** 理论上保证全局收敛的充分条件是学习率序列满足 $\sum \eta_k = \infty$ 且 $\sum \eta_k^2 < \infty$ ；
+对于强凸函数，SGD 使用 $1/k$ 的学习率衰减策略可以达到最优收敛速度；
+
+### 收敛速度
+SGD：
+强凸函数的误差与迭代次数k成反比
+$$|f(w^k)-f(w^*)|=\frac{1}{k}|f(w^0)-f(w^*)|$$
+
+因此收敛速度为$O(1/k)$，迭代$O(1/\epsilon)$次可以达到误差$\epsilon$；
+一般凸函数的误差与$\sqrt{k}$成反比，收敛速度为$O(1/\sqrt{k})$，需要迭代$O(1/\epsilon^2)$次收敛；
+
+Batch GD：
+对于强凸函数，误差指数下降：
+$$|f(w^k)-f(w^*)|=c^k|f(w^0)-f(w^*)|$$
+收敛需要$O(log(1/\epsilon))$次迭代；
+一般的凸函数需要$O(1/\epsilon)$次迭代。
+尽管Batch GD需要的迭代次数少，但是每次迭代需要计算整个数据集，而SGD每次迭代很快，总体来看SGD收敛更快。
+
+Minibatch GD：
+对于一般的凸函数，minibatch 大小为b，收敛速率为$O(1/\sqrt{bk}+1/k)$，比SGD小；
+实际应用中，目标函数一般非凸，mini-batch更加有效，同时方便批量并行计算。
