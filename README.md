@@ -311,10 +311,11 @@ $$
 =\sum_{i}G_{ib}\cdot x_{ia} \\
 这等价于G的第b列与X的第a列对应元素相乘然后再相加, 写成内积形式: \\
 = X_{[a, :]}^T\cdot G_{[:, b]}\\
-\end{array}
+(X^T_{[a,:]}表示先转置, 然后再取一行)
+\end{array} 
 $$
 
-- 此时已经推导得到$(\frac{\partial L}{\partial W})_{ab}=X_{[:,a]}^T\cdot G_{[:, b]}$，可以验证$\frac{\partial L}{\partial W} =  X^T \cdot G \in R^{D_1 \times D_2}$。形状也是对得上的，和$W$的形状相同。
+- 此时已经推导得到$(\frac{\partial L}{\partial W})_{ab}=X_{[a,:]}^T\cdot G_{[:, b]}$，可以验证$\frac{\partial L}{\partial W} =  X^T \cdot G \in R^{D_1 \times D_2}$。形状也是对得上的，和$W$的形状相同。
 - **由此得到结论**：
 
 $$
