@@ -246,9 +246,10 @@ flowchart TD
 
 
 ## Backpropagation && GD in Neural Network
-### 神经网络本质
-1. **Neural Network Intro**
+### Neural Network
+1. **Feedforward Neural Network Intro**
     * 由大量相互连接的神经元组成的计算模型，通过层层非线性变换，能够学习输入与输出之间复杂的映射关系。
+    * 信息单向流动，数据从输入层经过隐藏层最终到达输出层，没有循环或反馈连接
 2.  **问题定义**
     *   **目标**：寻找一组最优权重参数，最小化损失函数，使模型预测最准确。
     *   **挑战**：高维、非凸、非线性的复杂优化问题，无法直接解析求解。
@@ -269,7 +270,96 @@ flowchart TD
 ---
 
 ### 反向传播Demo
-![alt text](img/demo.png)
+#### 前向传播
+##### 1. 线性层
+$$
+z = w \cdot x + b
+$$
+其中：
+- $ x $：输入（标量）
+- $ w $：权重（标量）
+- $ b $：偏置（标量）
+- $ z $：线性层输出（标量）
+
+##### 2. 激活函数
+$$
+a = \sigma(z) = \frac{1}{1 + e^{-z}}
+$$
+
+##### 3. 损失函数
+$$
+\text{loss} = -\left[ y \cdot \log(a) + (1 - y) \cdot \log(1 - a) \right]
+$$
+其中 $ y $ 是真实标签（0或1）。
+
+#### 反向传播推导
+##### 1. 计算损失对激活输出 $ a $ 的梯度
+$$
+\frac{\partial \text{loss}}{\partial a} = -\left[ \frac{y}{a} - \frac{1-y}{1-a} \right]
+$$
+化简得：
+$$
+\frac{\partial \text{loss}}{\partial a} = \frac{a - y}{a(1-a)}
+$$
+
+##### 2. 计算激活函数对 $ z $ 的梯度
+$$
+\frac{\partial a}{\partial z} = a(1-a)
+$$
+
+##### 3. 计算损失对线性输出 $ z $ 的梯度（链式法则）
+$$
+\frac{\partial \text{loss}}{\partial z} = \frac{\partial \text{loss}}{\partial a} \cdot \frac{\partial a}{\partial z}
+$$
+代入得：
+$$
+\frac{\partial \text{loss}}{\partial z} = \frac{a - y}{a(1-a)} \cdot a(1-a) = a - y
+$$
+
+##### 4. 计算损失对权重 $ w $ 的梯度
+由于 $ z = x \cdot w + b $，有：
+$$
+\frac{\partial z}{\partial w} = x
+$$
+应用链式法则：
+$$
+\frac{\partial \text{loss}}{\partial w} = \frac{\partial \text{loss}}{\partial z} \cdot \frac{\partial z}{\partial w} = (a - y) \cdot x
+$$
+
+##### 5. 计算损失对偏置 $ b $ 的梯度
+由于 $ z = x \cdot w + b $，有：
+$$
+\frac{\partial z}{\partial b} = 1
+$$
+应用链式法则：
+$$
+\frac{\partial \text{loss}}{\partial b} = \frac{\partial \text{loss}}{\partial z} \cdot \frac{\partial z}{\partial b} = a - y
+$$
+
+##### 6. 计算损失对输入 $ x $ 的梯度
+$$
+\frac{\partial z}{\partial x} = w
+$$
+$$
+\frac{\partial \text{loss}}{\partial x} = \frac{\partial \text{loss}}{\partial z} \cdot \frac{\partial z}{\partial x} = (a - y) \cdot w
+$$
+
+#### 反向传播公式总结
+| 参数 | 梯度公式 |
+|------|----------|
+| 损失对输出 $ z $ 的梯度 | $\displaystyle \frac{\partial \text{loss}}{\partial z} = a - y = \sigma(z) - y$ |
+| 损失对权重 $ w $ 的梯度 | $\displaystyle \frac{\partial \text{loss}}{\partial w} = (a - y) \cdot x$ |
+| 损失对偏置 $ b $ 的梯度 | $\displaystyle \frac{\partial \text{loss}}{\partial b} = a - y$ |
+| 损失对输入 $ x $ 的梯度 | $\displaystyle \frac{\partial \text{loss}}{\partial x} = (a - y) \cdot w$ |
+
+#### 参数更新公式（梯度下降）
+使用学习率 $ \eta $ 更新参数：
+$$
+w \leftarrow w - \eta \cdot \frac{\partial \text{loss}}{\partial w}
+$$
+$$
+b \leftarrow b - \eta \cdot \frac{\partial \text{loss}}{\partial b}
+$$
 
 ---
 
