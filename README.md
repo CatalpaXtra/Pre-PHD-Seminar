@@ -19,9 +19,21 @@ Gradient Desent && Backpropagation
 **算法过程**：
 1.  **初始化**：随机选择或指定一组参数的初始值 $\theta_0$，设定学习率 $\eta$（步长）和迭代终止条件（如最大迭代次数或梯度范数阈值）。
 2.  **迭代更新**：对于第 $k$ 次迭代（$k = 0, 1, 2, ...$）：
-    *   **计算梯度**：计算目标函数在当前参数 $\theta_k$ 处的梯度 $\nabla J(\theta_k)$。
-    *   **更新参数**：沿梯度反方向更新参数：$\theta_{k+1} = \theta_k - \eta \cdot \nabla J(\theta_k)$。
-    *   **检查收敛**：判断是否满足终止条件（如梯度足够小、$J(\theta)$ 变化不明显或达到最大迭代次数）。若满足，则停止迭代，输出当前 $\theta_{k+1}$ 作为近似解；否则，继续进行下一轮迭代。
+    1. **计算梯度** 
+    计算目标函数在当前参数 $\theta_k$ 处的梯度：  
+    $$
+    \nabla J(\theta_k)
+    $$
+    2. **更新参数** 
+    沿梯度反方向调整参数：  
+    $$
+    \theta_{k+1} = \theta_k - \eta \cdot \nabla J(\theta_k)
+    $$
+    3. **检查收敛**  
+    判断是否满足任一终止条件：
+        - 梯度范数 $\|\nabla J(\theta_k)\| = \sqrt{\left( \frac{\partial J}{\partial \theta_1} \right)^2 + \left( \frac{\partial J}{\partial \theta_2} \right)^2 + \dots + \left( \frac{\partial J}{\partial \theta_n} \right)^2}$ 足够小
+        - 目标函数值 $J(\theta)$ 变化不明显
+        - 达到预设的最大迭代次数  
 
 **相关挑战**：
 *   **学习率选择**：固定学习率难以适应训练全过程。
