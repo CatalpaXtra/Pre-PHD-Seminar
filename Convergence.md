@@ -30,7 +30,7 @@ $$
 - **$\eta_{opt} < \eta < 2\eta_{opt}$**：振荡收敛至最小值
 - **$\eta > 2\eta_{opt}$**：算法发散
 
-![收敛行为示意图](img/Pasted%20image%2020251222195035.png)
+![收敛行为示意图](./img/Convergence_quardratic_fun.png)
 
 ### 1.2 非二次函数分析
 对一般目标函数进行二阶泰勒展开：
@@ -95,7 +95,7 @@ $$
 
 **最优学习率**：$\eta = 1$
 
-![坐标变换效果示意图](img/Pasted%20image%2020251222203039.png)
+![坐标变换效果示意图](./img/Newton1.png)
 
 ### 2.3 牛顿二阶方法（一般函数）
 #### 2.3.1 基本原理
@@ -121,8 +121,7 @@ $$
 $$
 \mathbf{H} = \mathbf{U}^T\boldsymbol{\Lambda}\mathbf{U}, \quad \hat{\mathbf{w}} = \mathbf{U}\mathbf{w}
 $$
-
-![牛顿方法收敛示意图](img/Pasted%20image%2020251222204302.png)
+![牛顿方法几何解释示意图](./img/Newton2.png)
 
 #### 2.3.3 局限性
 1. **计算复杂度高**：Hessian矩阵求逆为 $O(N^3)$ 复杂度
