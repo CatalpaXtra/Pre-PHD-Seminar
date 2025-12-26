@@ -1,4 +1,62 @@
 # Pre-PHD Seminar Syllabus
+## Project Structure
+```
+├── README.md                # 项目总览和章节索引
+├── Chapter1/                # Chapter 1：Gradient Descent & Backpropagation
+│   ├── README.md            # 章节详细内容
+│   ├── img/                 # 章节相关图片资源
+│   └── resource/            # 章节相关参考资料
+├── Chapter2/                # 其他章节遵循相同结构
+│   ├── README.md
+│   ├── img/
+│   └── resource/
+├── ...
+```
+
+### 目录命名规范
+1. **章节目录**：使用 `Chapter{N}/` 格式，其中 `{N}` 为章节编号（如 `Chapter1/`, `Chapter2/`）
+2. **资源目录**：使用小写字母和下划线（ `img/`, `resource/`）
+3. **文件命名**：
+   - README文件统一使用 `README.md`
+   - 图片文件使用描述性名称，支持中文和英文（如 `BP_in_BN.png`）
+   - PDF文件保持原文件名
+
+### 内容组织规范
+1. **章节README结构**：
+   ```markdown
+   # [章节标题]
+   ## 概述
+   ## 理论基础
+   ## 实践应用
+   ## 参考资料
+   ```
+
+2. **图片资源**：
+   - 每个章节的图片存放在对应章节的 `img/` 目录下
+   - 图片引用使用相对路径：`![alt text](./img/filename.png)`
+
+### 扩展性规范
+1. **添加新章节**：
+   - 在根目录下创建 `Chapter{N}/` 目录
+   - 创建 `Chapter{N}/README.md` 和 `Chapter{N}/img/` 目录
+   - 在主 `README.md` 中添加章节详细内容大纲
+
+2. **内容更新**：
+   - 章节详细内容更新在对应章节的 `README.md` 中
+   - 主 `README.md` 保持章节概览和索引功能
+
+3. **资源管理**：
+   - 参考资料统一放在 `resource/` 目录
+   - 论文阅读笔记放在 `rating/` 目录，按年份/会议组织
+   - 保持目录结构扁平化，避免过深嵌套
+
+### 版本控制建议
+- 使用 Git 进行版本控制
+- 提交信息格式：`<type>: Chapter{N} <description>`
+- 大文件（PDF、大图片）考虑使用 Git LFS
+
+---
+
 ## Chapter Topic List
 1. Gradient Descent & Backpropagation
 2. Deep Neural Networks & Regularization
