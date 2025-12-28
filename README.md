@@ -3,23 +3,23 @@
 ```
 ├── README.md                # 项目总览和章节索引
 ├── Chapter1/                # Chapter 1：Gradient Descent & Backpropagation
-│   ├── README.md            # 章节详细内容
 │   ├── img/                 # 章节相关图片资源
-│   └── resource/            # 章节相关参考资料
+│   ├── README.md            # 章节详细内容
+│   └── references.md        # 章节参考资料链接
 ├── Chapter2/                # 其他章节遵循相同结构
-│   ├── README.md
 │   ├── img/
-│   └── resource/
+│   ├── README.md
+│   └── references.md
 ├── ...
 ```
 
 ### 目录命名规范
 1. **章节目录**：使用 `Chapter{N}/` 格式，其中 `{N}` 为章节编号（如 `Chapter1/`, `Chapter2/`）
-2. **资源目录**：使用小写字母和下划线（ `img/`, `resource/`）
+2. **资源目录**：使用小写字母和下划线（ `img/`）
 3. **文件命名**：
-   - README文件统一使用 `README.md`
+   - 章节详细内容文件统一使用 `README.md`
+   - 章节参考资料文件统一使用 `references.md`
    - 图片文件使用描述性名称，支持中文和英文（如 `BP_in_BN.png`）
-   - PDF文件保持原文件名
 
 ### 内容组织规范
 1. **章节README结构**：
@@ -38,16 +38,12 @@
 ### 扩展性规范
 1. **添加新章节**：
    - 在根目录下创建 `Chapter{N}/` 目录
-   - 创建 `Chapter{N}/README.md` 和 `Chapter{N}/img/` 目录
+   - 创建 `Chapter{N}/README.md`, `Chapter{N}/references.md` 和 `Chapter{N}/img/` 目录
    - 在主 `README.md` 中添加章节详细内容大纲
 
 2. **内容更新**：
    - 章节详细内容更新在对应章节的 `README.md` 中
    - 主 `README.md` 保持章节概览和索引功能
-
-3. **资源管理**：
-   - 参考资料统一放在 `resource/` 目录
-   - 论文阅读笔记放在 `rating/` 目录，按年份/会议组织
    - 保持目录结构扁平化，避免过深嵌套
 
 ### 版本控制建议
