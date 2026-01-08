@@ -130,6 +130,18 @@ $$\mathbf{z}_l = \mathbf{F}_l(\mathbf{z_{l-1}})+\mathbf{Wz_{l-1}}$$
 使用残差连接时，存在两种顺序，如图中所示，一般采用（b）表示的顺序，因为（a）顺序下，被加的输出来自ReLU激活函数，永远为整数，而（b）中正负均可。
 ![residual_connection_order](./img/residual_connections_order.png)
 
+一般情况下，如果希望在已有的预训练模型中加入额外层继续训练，会导致性能下降，而使用残差连接则不会出现该问题。
+残差连接容易构造恒等映射（只需将该层的操作块的权重设置为0即可），这意味着我们可以在已经训练好的网络中加入额外的残差连接的层块，继续训练能够在已有网络上进一步提升性能，而不会损失已有性能。
+![residual_add_layers](./img/residual_connections_identity.jpg)
+
+此外，由于残差连接块拟合的是残差函数，函数值一般较小，变化平缓，这使得优化过程更容易收敛。比如，对于一个恒等映射函数$f(x) = x$，其残差函数为$F(x) = f(x) - x = 0$，这是一个非常简单的函数，优化器可以很容易地找到这个解。相比之下，直接优化$f(x)$可能会更复杂，尤其是在深层网络中。
+
+假如训练过程中一次参数更新使权重变化$\Delta W$，则输出变化为：
+$$\Delta \mathbf{z}_l = \frac{\partial \mathbf{z}_l}{\partial \mathbf{W}} \Delta \mathbf{W} = \frac{\partial \mathbf{F}_l(\mathbf{z}_{l-1})}{\partial \mathbf{W}} \Delta \mathbf{W}$$
+可以看出，残差连接使得输出变化只与$\mathbf{F}_l$有关，而与输入$\mathbf{z}_{l-1}$无关，这使得输出变化更加稳定，减小了梯度爆炸的风险。
+![residual_smooth](./img/residual_connection_sensitivity.jpg)
+
+
 ---
 ## Model Averaging
 ### Ensemble Methods
